@@ -20,6 +20,7 @@ dependencies {
     // Dependencies outside the Quarkus ecosystem:
     implementation 'com.caoccao.javet:javet:2.1.1'
     implementation 'com.caoccao.javet:javet-macos:2.1.1'
+    implementation files('libs/luaj-jse-3.0.2.jar')
 }
 
 group 'io.github.pixelsam123'
