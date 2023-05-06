@@ -102,7 +102,7 @@ public class LuajCodeExecutor implements CodeExecutor {
                 throw new Error("Script overran resource limits.");
             }
         };
-        final int instructionCount = 20;
+        final int instructionCount = 100;
         sethook.invoke(LuaValue.varargsOf(new LuaValue[]{
             thread, hookfunc,
             LuaValue.EMPTYSTRING, LuaValue.valueOf(instructionCount)
