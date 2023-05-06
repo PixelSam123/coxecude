@@ -9,6 +9,7 @@ import org.luaj.vm2.lib.jse.JseStringLib;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
@@ -75,48 +76,55 @@ public class LuajCodeExecutor implements CodeExecutor {
         userGlobals.set("debug", LuaValue.NIL);
 
         // Redirect stdout to a StringBuilder
-        ByteArrayOutputStream stdoutAndStderr = new ByteArrayOutputStream();
-        PrintStream stdoutAndStderrPS =
-            new PrintStream(stdoutAndStderr, true, StandardCharsets.UTF_8);
-        userGlobals.STDOUT = stdoutAndStderrPS;
-        userGlobals.STDERR = stdoutAndStderrPS;
+        try (
+            ByteArrayOutputStream stdoutAndStderr = new ByteArrayOutputStream();
+            PrintStream stdoutAndStderrPS = new PrintStream(
+                stdoutAndStderr,
+                true,
+                StandardCharsets.UTF_8
+            )
+        ) {
+            userGlobals.STDOUT = stdoutAndStderrPS;
+            userGlobals.STDERR = stdoutAndStderrPS;
 
-        // Set up the script to run in its own lua thread, which allows us
-        // to set a hook function that limits the script to a specific number of cycles.
-        // Note that the environment is set to the user globals, even though the
-        // compiling is done with the server globals.
-        LuaValue chunk;
-        try {
-            chunk = serverGlobals.load(code, "main", userGlobals);
-        } catch (LuaError e) {
-            return new CodeExecutorResult(1, e.getMessage());
-        }
-        LuaThread thread = new LuaThread(userGlobals, chunk);
-
-        // Set the hook function to immediately throw an Error, which will not be
-        // handled by any Lua code other than the coroutine.
-        LuaValue hookfunc = new ZeroArgFunction() {
-            public LuaValue call() {
-                // A simple lua error may be caught by the script, but a
-                // Java Error will pass through to top and stop the script.
-                throw new Error("Script overran resource limits.");
+            // Set up the script to run in its own lua thread, which allows us
+            // to set a hook function that limits the script to a specific number of cycles.
+            // Note that the environment is set to the user globals, even though the
+            // compiling is done with the server globals.
+            LuaValue chunk;
+            try {
+                chunk = serverGlobals.load(code, "main", userGlobals);
+            } catch (LuaError e) {
+                return new CodeExecutorResult(1, e.getMessage());
             }
-        };
-        final int instructionCount = 100;
-        sethook.invoke(LuaValue.varargsOf(new LuaValue[]{
-            thread, hookfunc,
-            LuaValue.EMPTYSTRING, LuaValue.valueOf(instructionCount)
-        }));
+            LuaThread thread = new LuaThread(userGlobals, chunk);
 
-        // When we resume the thread, it will run up to 'instructionCount' instructions
-        // then call the hook function which will error out and stop the script.
-        Varargs result = thread.resume(LuaValue.NIL);
+            // Set the hook function to immediately throw an Error, which will not be
+            // handled by any Lua code other than the coroutine.
+            LuaValue hookFunc = new ZeroArgFunction() {
+                public LuaValue call() {
+                    // A simple lua error may be caught by the script, but a
+                    // Java Error will pass through to top and stop the script.
+                    throw new Error("Script overran resource limits.");
+                }
+            };
+            final int instructionCount = 100;
+            sethook.invoke(LuaValue.varargsOf(new LuaValue[]{
+                thread, hookFunc, LuaValue.EMPTYSTRING, LuaValue.valueOf(instructionCount)
+            }));
 
-        if (!result.checkboolean(1)) {
-            return new CodeExecutorResult(1, stdoutAndStderr + result.checkjstring(2));
+            // When we resume the thread, it will run up to 'instructionCount' instructions
+            // then call the hook function which will error out and stop the script.
+            Varargs result = thread.resume(LuaValue.NIL);
+
+            if (!result.checkboolean(1)) {
+                return new CodeExecutorResult(1, stdoutAndStderr + result.checkjstring(2));
+            }
+
+            return new CodeExecutorResult(0, stdoutAndStderr.toString());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        return new CodeExecutorResult(0, stdoutAndStderr.toString());
     }
 
 }
