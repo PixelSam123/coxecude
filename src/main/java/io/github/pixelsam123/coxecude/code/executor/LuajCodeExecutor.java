@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 @ApplicationScoped
 public class LuajCodeExecutor implements CodeExecutor {
 
+    /** These globals are used by the server to compile scripts. */
     private static Globals serverGlobals;
 
     public LuajCodeExecutor() {
