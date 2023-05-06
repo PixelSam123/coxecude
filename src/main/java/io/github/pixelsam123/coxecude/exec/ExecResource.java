@@ -1,5 +1,6 @@
 package io.github.pixelsam123.coxecude.exec;
 
+import io.github.pixelsam123.coxecude.code.executor.CodeExecutor;
 import io.github.pixelsam123.coxecude.code.executor.CodeExecutorResult;
 import io.github.pixelsam123.coxecude.code.executor.JavetCodeExecutor;
 import io.github.pixelsam123.coxecude.code.executor.LuajCodeExecutor;
@@ -11,14 +12,18 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import java.util.Map;
 
 @Path("/")
 public class ExecResource {
 
-    private final JavetCodeExecutor javetCodeExecutor;
+    private final Map<String, CodeExecutor> langToCodeExecutor;
 
-    public ExecResource(JavetCodeExecutor javetCodeExecutor) {
-        this.javetCodeExecutor = javetCodeExecutor;
+    public ExecResource(JavetCodeExecutor javetCodeExecutor, LuajCodeExecutor luajCodeExecutor) {
+        langToCodeExecutor = Map.ofEntries(
+            Map.entry("js", javetCodeExecutor),
+            Map.entry("lua", luajCodeExecutor)
+        );
     }
 
     @POST
@@ -26,12 +31,12 @@ public class ExecResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<ExecResponse> hello(ExecRequest execRequest) {
         return Uni.createFrom().item(() -> {
-            CodeExecutorResult result = switch (execRequest.lang()) {
-                case "js" -> javetCodeExecutor.exec(execRequest.code());
-                case "lua" -> new LuajCodeExecutor().exec(execRequest.code());
-                default -> new CodeExecutorResult(-1, "invalid language");
-            };
+            CodeExecutor codeExecutor = langToCodeExecutor.get(execRequest.lang());
+            if (codeExecutor == null) {
+                return new ExecResponse(-1, "Invalid language");
+            }
 
+            CodeExecutorResult result = codeExecutor.exec(execRequest.code());
             return new ExecResponse(result.statusCode(), result.stdoutAndStderr());
         }).runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
     }

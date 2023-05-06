@@ -7,10 +7,12 @@ import org.luaj.vm2.lib.jse.JseBaseLib;
 import org.luaj.vm2.lib.jse.JseMathLib;
 import org.luaj.vm2.lib.jse.JseStringLib;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
+@ApplicationScoped
 public class LuajCodeExecutor implements CodeExecutor {
 
     private static Globals serverGlobals;
