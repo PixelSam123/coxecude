@@ -18,7 +18,7 @@ the warning above.)
 
 - [X] JavaScript, using [caoccao/Javet](https://github.com/caoccao/Javet)
 - [ ] Python, using [ninia/jep](https://github.com/ninia/jep)
-- [ ] Lua, using [luaj/luaj](https://github.com/luaj/luaj)
+- [X] Lua, using [luaj/luaj](https://github.com/luaj/luaj)
 
 ## Endpoints
 
