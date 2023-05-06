@@ -16,7 +16,9 @@ import java.nio.charset.StandardCharsets;
 @ApplicationScoped
 public class LuajCodeExecutor implements CodeExecutor {
 
-    /** These globals are used by the server to compile scripts. */
+    /**
+     * These globals are used by the server to compile scripts.
+     */
     private static Globals serverGlobals;
 
     public LuajCodeExecutor() {
@@ -31,6 +33,9 @@ public class LuajCodeExecutor implements CodeExecutor {
         serverGlobals.load(new JseMathLib());
         LoadState.install(serverGlobals);
         LuaC.install(serverGlobals);
+
+        // Set up the LuaString metatable to be read-only since it is shared across all scripts.
+        LuaString.s_metatable = new ReadOnlyLuaTable(LuaString.s_metatable);
     }
 
     /**
@@ -125,6 +130,38 @@ public class LuajCodeExecutor implements CodeExecutor {
             return new CodeExecutorResult(0, stdoutAndStderr.toString());
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static class ReadOnlyLuaTable extends LuaTable {
+        public ReadOnlyLuaTable(LuaValue table) {
+            presize(table.length(), 0);
+            for (Varargs n = table.next(LuaValue.NIL); !n.arg1().isnil();
+                 n = table.next(n.arg1())) {
+                LuaValue key = n.arg1();
+                LuaValue value = n.arg(2);
+                super.rawset(key, value.istable() ? new ReadOnlyLuaTable(value) : value);
+            }
+        }
+
+        public LuaValue setmetatable(LuaValue metatable) {
+            return error("table is read-only");
+        }
+
+        public void set(int key, LuaValue value) {
+            error("table is read-only");
+        }
+
+        public void rawset(int key, LuaValue value) {
+            error("table is read-only");
+        }
+
+        public void rawset(LuaValue key, LuaValue value) {
+            error("table is read-only");
+        }
+
+        public LuaValue remove(int pos) {
+            return error("table is read-only");
         }
     }
 
