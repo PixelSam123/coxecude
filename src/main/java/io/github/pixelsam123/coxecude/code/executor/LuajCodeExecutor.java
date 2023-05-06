@@ -31,17 +31,13 @@ public class LuajCodeExecutor implements CodeExecutor {
         LuaC.install(serverGlobals);
     }
 
-    @Override
-    public CodeExecutorResult exec(String code) {
-        return new CodeExecutorResult(0, runScriptInSandbox(code));
-    }
-
     /**
      * Function from the link below
      *
      * @see <a href="https://github.com/luaj/luaj/blob/master/examples/jse/SampleSandboxed.java">luaj SampleSandboxed example</a>
      */
-    private static String runScriptInSandbox(String script) {
+    @Override
+    public CodeExecutorResult exec(String code) {
         // Each script will have its own set of globals, which should
         // prevent leakage between scripts running on the same server.
         Globals userGlobals = new Globals();
@@ -57,7 +53,7 @@ public class LuajCodeExecutor implements CodeExecutor {
         // userGlobals.load(new LuajavaLib());
 
         // Starting coroutines in scripts will result in threads that are
-        // not under the server control, so this libary should probably remain out.
+        // not under the server control, so this library should probably remain out.
         // userGlobals.load(new CoroutineLib());
 
         // These are probably unwise and unnecessary for scripts on servers,
@@ -89,7 +85,12 @@ public class LuajCodeExecutor implements CodeExecutor {
         // to set a hook function that limits the script to a specific number of cycles.
         // Note that the environment is set to the user globals, even though the
         // compiling is done with the server globals.
-        LuaValue chunk = serverGlobals.load(script, "main", userGlobals);
+        LuaValue chunk;
+        try {
+            chunk = serverGlobals.load(code, "main", userGlobals);
+        } catch (LuaError e) {
+            return new CodeExecutorResult(1, e.getMessage());
+        }
         LuaThread thread = new LuaThread(userGlobals, chunk);
 
         // Set the hook function to immediately throw an Error, which will not be
@@ -101,17 +102,21 @@ public class LuajCodeExecutor implements CodeExecutor {
                 throw new Error("Script overran resource limits.");
             }
         };
-        final int instruction_count = 20;
+        final int instructionCount = 20;
         sethook.invoke(LuaValue.varargsOf(new LuaValue[]{
             thread, hookfunc,
-            LuaValue.EMPTYSTRING, LuaValue.valueOf(instruction_count)
+            LuaValue.EMPTYSTRING, LuaValue.valueOf(instructionCount)
         }));
 
-        // When we resume the thread, it will run up to 'instruction_count' instructions
+        // When we resume the thread, it will run up to 'instructionCount' instructions
         // then call the hook function which will error out and stop the script.
         Varargs result = thread.resume(LuaValue.NIL);
 
-        return stdoutAndStderr.toString();
+        if (!result.checkboolean(1)) {
+            return new CodeExecutorResult(1, stdoutAndStderr + result.checkjstring(2));
+        }
+
+        return new CodeExecutorResult(0, stdoutAndStderr.toString());
     }
 
 }
