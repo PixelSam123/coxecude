@@ -9,9 +9,9 @@ import com.caoccao.javet.interop.engine.JavetEnginePool;
 import org.eclipse.microprofile.openapi.annotations.OpenAPIDefinition;
 import org.eclipse.microprofile.openapi.annotations.info.Info;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Disposes;
-import javax.ws.rs.core.Application;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.ws.rs.core.Application;
 
 @OpenAPIDefinition(
     info = @Info(

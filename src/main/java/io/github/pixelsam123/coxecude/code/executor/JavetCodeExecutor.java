@@ -10,7 +10,7 @@ import com.caoccao.javet.interop.engine.IJavetEngine;
 import com.caoccao.javet.interop.engine.IJavetEnginePool;
 import com.caoccao.javet.values.V8Value;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 
 import static io.github.pixelsam123.coxecude.utils.UtilsAsync.*;
