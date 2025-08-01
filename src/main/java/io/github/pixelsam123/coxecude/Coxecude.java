@@ -16,7 +16,7 @@ import jakarta.ws.rs.core.Application;
 @OpenAPIDefinition(
     info = @Info(
         title = "coxecude",
-        version = "0.1.0",
+        version = "0.1.1",
         description = "Server exposing a REST API to execute code through various VMs/interpreters"
     )
 )

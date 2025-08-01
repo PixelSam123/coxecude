@@ -2,7 +2,7 @@
 
 Server exposing a REST API to execute code through various VMs/interpreters
 
-## Warning
+## WARNING
 
 Some VMs used as executors may not be free of privilege escalation exploit risks.  
 Because of this, I highly recommend **running this server on a throwaway VPS
