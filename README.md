@@ -1,6 +1,11 @@
 # coxecude
 
-Server exposing a REST API to execute code through various VMs/interpreters
+![pcp banner](https://raw.githubusercontent.com/PixelSam123/coxecude/refs/heads/main/docs/pcp.webp)
+
+Welcome to the Pixel Code Platform family of projects. This is the code execution server.  
+Pixel Code Platform is a self-hostable coding challenge platform. The backend is open to contribution!
+
+This is a server exposing a REST API to execute code through various VMs/interpreters
 
 ## WARNING
 
